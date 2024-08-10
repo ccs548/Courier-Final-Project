@@ -1,3 +1,4 @@
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class TrackingRecord {
@@ -7,8 +8,8 @@ public class TrackingRecord {
 
     public TrackingRecord(PackageStatus status, Date updateDate, Date expectedArrivalDate) {
         this.status = status;
-        this.updateDate = updateDate;
         this.expectedArrivalDate = expectedArrivalDate;
+        this.updateDate = updateDate;
     }
 
     public PackageStatus getStatus() {
@@ -33,5 +34,17 @@ public class TrackingRecord {
 
     public void setExpectedArrivalDate(Date expectedArrivalDate) {
         this.expectedArrivalDate = expectedArrivalDate;
+    }
+
+    @Override
+    public String toString() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(String.format("%-12s", status));
+        sb.append(String.format("%-20s", dateFormat.format(expectedArrivalDate)));
+        sb.append(String.format("%-15s", dateFormat.format(updateDate)));
+
+        return sb.toString();
     }
 }
