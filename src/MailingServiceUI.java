@@ -26,7 +26,10 @@ public class MailingServiceUI {
             System.out.println("2. Add Package");
             System.out.println("3. Display All Packages");
             System.out.println("4. Search Package");
-            System.out.println("5. Exit");
+            System.out.println("5. Edit Package");
+            System.out.println("6. Delete Package");  // New option for deleting a package
+            System.out.println("7. View Revision History");
+            System.out.println("8. Exit");
             System.out.print("Select an option: ");
             int option = scanner.nextInt();
             scanner.nextLine();
@@ -45,6 +48,15 @@ public class MailingServiceUI {
                     searchPackage();
                     break;
                 case 5:
+                    editPackage();  // Ensure this method is called correctly
+                    break;
+                case 6:
+                    deletePackage();  // Call the new method to delete a package
+                    break;
+                case 7:
+                    viewRevisionHistory();
+                    break;
+                case 8:
                     running = false;
                     break;
                 default:
@@ -54,174 +66,114 @@ public class MailingServiceUI {
         scanner.close();
     }
 
+    private void deletePackage() {
+        System.out.print("Enter the Tracking ID of the package to delete: ");
+        int trackingId = scanner.nextInt();
+        scanner.nextLine(); // Consume newline
+
+        boolean success = mailingService.deletePackage(trackingId);
+        if (success) {
+            System.out.println("Package deleted successfully.");
+        } else {
+            System.out.println("No package found with that Tracking ID.");
+        }
+    }
+
     private void estimateCost() {
         System.out.println("=====================================================");
-        System.out.println("                     Estimate Cost                   ");
+        System.out.println("                Estimate Shipping Cost               ");
         System.out.println("=====================================================");
-        System.out.print("Enter package weight: ");
+        System.out.print("Enter the weight of the package (in pounds): ");
         double weight = scanner.nextDouble();
-        scanner.nextLine();
         double cost = mailingService.estimateCost(weight);
-        System.out.println("Estimated Cost: $" + cost);
-        System.out.println("Press enter to return to main page");
-        scanner.nextLine();
+        System.out.printf("The estimated cost is $%.2f\n", cost);
     }
 
     private void addPackage() {
         System.out.println("=====================================================");
-        System.out.println("                     Add Package                     ");
+        System.out.println("                    Add a Package                    ");
         System.out.println("=====================================================");
-        System.out.print("Enter package weight: ");
+        System.out.print("Enter the weight of the package (in pounds): ");
         double weight = scanner.nextDouble();
-        scanner.nextLine();
-        System.out.print("Enter package description: ");
+        scanner.nextLine(); // Consume newline
+        System.out.print("Enter a description of the package: ");
         String description = scanner.nextLine();
-        System.out.print("Enter destination address: ");
+        System.out.print("Enter the destination address: ");
         String destinationAddress = scanner.nextLine();
-        Date updateDate = getDateInput("Enter the current date (yyyy-MM-dd):");
-        Date expectedArrivalDate = getDateInput("Enter expected arrival date (yyyy-MM-dd):");
-        int trackingId = mailingService.addPackage(weight, description, destinationAddress, updateDate, expectedArrivalDate);
-        System.out.println("Package added with Tracking ID: " + trackingId);
-        System.out.println(getHeader());
-        System.out.println(mailingService.searchPackage(trackingId));
-        System.out.println("Press enter to return to main page");
-        scanner.nextLine();
+        System.out.print("Enter the mailed date (yyyy-MM-dd): ");
+        Date mailedDate = parseDate(scanner.nextLine());
+        System.out.print("Enter the expected arrival date (yyyy-MM-dd): ");
+        Date expectedArrivalDate = parseDate(scanner.nextLine());
+
+        int trackingId = mailingService.addPackage(weight, description, destinationAddress, mailedDate, expectedArrivalDate);
+        System.out.printf("Package added successfully with Tracking ID: %d\n", trackingId);
     }
 
     private void displayPackages() {
         System.out.println("=====================================================");
-        System.out.println("                  Display Packages                   ");
+        System.out.println("                  Display All Packages               ");
         System.out.println("=====================================================");
-        System.out.println(getHeader());
         System.out.println(mailingService.getPackagesDetails());
-        System.out.println("Press enter to return to main page");
-        scanner.nextLine();
     }
 
     private void searchPackage() {
         System.out.println("=====================================================");
-        System.out.println("                    Search Package                   ");
+        System.out.println("                   Search for Package                ");
         System.out.println("=====================================================");
-        System.out.print("Please enter the tracking ID (must be an integer): ");
+        System.out.print("Enter the Tracking ID of the package: ");
         int trackingId = scanner.nextInt();
-        Package p = mailingService.searchPackage(trackingId);
-        if (p == null) {
-            System.out.println("The package with tracking ID " + trackingId + " is not found in our mailing service system.");
-            return;
-        }
-        System.out.println("------------------------------------------------------");
-        System.out.println(getHeader());
-        System.out.println(p);
-        System.out.println("------------------Tracking History---------------------");
-        System.out.println(getTrackingRecordHeader());
-        for (TrackingRecord trackingRecord: p.getTrackingHistory()) {
-            System.out.println(trackingRecord);
-        }
-        System.out.println("Do you want to update or delete this package?");
-        System.out.println("1. Update Package Status");
-        System.out.println("2. Delete Package");
-        System.out.println("3. Go Back to Main Menu");
-        System.out.print("Select an option: ");
-        int option = scanner.nextInt();
-        scanner.nextLine();
-
-        switch (option) {
-            case 1:
-                updatePackageRecord(trackingId);
-                break;
-            case 2:
-                deletePackage(trackingId);
-                break;
-            case 3:
-                break;
-            default:
-                System.out.println("Invalid option. Returning to main menu.");
-        }
-    }
-
-    private void updatePackageRecord(int trackingId) {
-        System.out.println("=====================================================");
-        System.out.println("                    Update Package                   ");
-        System.out.println("=====================================================");
-        Package p = mailingService.searchPackage(trackingId);
-        PackageStatus status = p.getTrackingRecord().getStatus();
-        if (status == PackageStatus.DELIVERED) {
-            System.out.println("This package is already delivered. Cannot update it anymore");
-            return;
-        }
-        Date updateDate = getDateInput("Enter the current date (yyyy-MM-dd):");
-        System.out.println("Select new status: ");
-        System.out.println("1. Packed");
-        System.out.println("2. In Transit");
-        System.out.println("3. Delivered");
-        int option = scanner.nextInt();
-        scanner.nextLine();
-        switch (option) {
-            case 1:
-                status = PackageStatus.PACKED;
-                break;
-            case 2:
-                status = PackageStatus.IN_TRANSIT;
-                break;
-            case 3:
-                status = PackageStatus.DELIVERED;
-                break;
-            default:
-                System.out.println("Invalid option. Returning to main menu.");
-        }
-        if (status != PackageStatus.DELIVERED) {
-            Date expectedArrivalDate = getDateInput("Enter the new expected arrival Date: ");
-            mailingService.updatePackageStatus(trackingId, status, updateDate, expectedArrivalDate);
+        Package foundPackage = mailingService.searchPackage(trackingId);
+        if (foundPackage != null) {
+            System.out.println(foundPackage);
         } else {
-            mailingService.updatePackageStatus(trackingId, status, updateDate, updateDate); // today is the delivery date
+            System.out.println("No package found with that Tracking ID.");
         }
-        System.out.println("Successfully update package details. Press enter to return to main page");
-        scanner.nextLine();
     }
 
-    private void deletePackage(int trackingId) {
+    private void viewRevisionHistory() {
         System.out.println("=====================================================");
-        System.out.println("                    Delete Package                   ");
+        System.out.println("                   Revision History                  ");
         System.out.println("=====================================================");
-        mailingService.removePackage(trackingId);
-        System.out.println("Successfully deleted package " + trackingId + ". Returning to main menu.");
+        System.out.println(mailingService.getRevisionHistory());
     }
 
-    private Date getDateInput(String prompt) {
-        Date date = null;
-        boolean valid = false;
-        while (!valid) {
-            System.out.print(prompt);
-            String dateInput = scanner.nextLine();
-            try {
-                date = dateFormatter.parse(dateInput);
-                valid = true;
-            } catch (ParseException e) {
-                System.out.println("Invalid date format. Please enter the date in yyyy-MM-dd format.");
+    private void editPackage() {
+        System.out.print("Enter the Tracking ID of the package to edit: ");
+        int trackingId = scanner.nextInt();
+        scanner.nextLine(); // Consume newline
+
+        Package existingPackage = mailingService.searchPackage(trackingId);
+        if (existingPackage != null) {
+            System.out.println("Enter the new details for the package:");
+            System.out.print("Enter the weight of the package (in pounds): ");
+            double weight = scanner.nextDouble();
+            scanner.nextLine(); // Consume newline
+            System.out.print("Enter a description of the package: ");
+            String description = scanner.nextLine();
+            System.out.print("Enter the destination address: ");
+            String destinationAddress = scanner.nextLine();
+            System.out.print("Enter the mailed date (yyyy-MM-dd): ");
+            Date mailedDate = parseDate(scanner.nextLine());
+            System.out.print("Enter the expected arrival date (yyyy-MM-dd): ");
+            Date expectedArrivalDate = parseDate(scanner.nextLine());
+
+            boolean success = mailingService.editPackage(trackingId, weight, description, destinationAddress, mailedDate, expectedArrivalDate);
+            if (success) {
+                System.out.println("Package updated successfully.");
+            } else {
+                System.out.println("Failed to update package.");
             }
+        } else {
+            System.out.println("No package found with that Tracking ID.");
         }
-        return date;
     }
 
-    private static String getHeader() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(String.format("%-12s", "Tracking ID"));
-        sb.append(String.format("%-8s", "Weight"));
-        sb.append(String.format("%-10s", "Cost"));
-        sb.append(String.format("%-15s", "Description"));
-        sb.append(String.format("%-30s", "Destination Address"));
-        sb.append(String.format("%-12s", "Status"));
-        sb.append(String.format("%-20s", "Expected Date"));
-        sb.append(String.format("%-15s", "Update Date"));
-        return sb.toString();
+    private Date parseDate(String dateStr) {
+        try {
+            return dateFormatter.parse(dateStr);
+        } catch (ParseException e) {
+            System.out.println("Invalid date format. Please use yyyy-MM-dd.");
+            return null;
+        }
     }
-
-    private static String getTrackingRecordHeader() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(String.format("%-12s", "Status"));
-        sb.append(String.format("%-20s", "Expected Arrival Date"));
-        sb.append(String.format("%-15s", "UpdateDate"));
-        return sb.toString();
-    }
-
 }
